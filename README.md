@@ -115,12 +115,11 @@ doMC	 - For all others
 ##############################################################################
 ############################## CITATION ######################################
 ##############################################################################
-If you plan to cite SHAPE the related manuscript is pending peer review submission but can be found on
-BioRxiv:
+If you plan to cite SHAPE the related manuscript is pending peer review submission but can be found on BioRxiv:
 Dench, Jonathan (2018) The SHAPE of logistic growth shows that timing does matter, bioRxiv, doi:10.1101/392944
 
 BibTex Citation Script:
-@article {Dench392944,
+@article {Dench:2018aa,
 	author = {Dench, Jonathan},
 	title = {The SHAPE of logistic growth shows that timing does matter},
 	year = {2018},
