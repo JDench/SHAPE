@@ -116,17 +116,30 @@ doMC	 - For all others
 ############################## CITATION ######################################
 ##############################################################################
 If you plan to cite SHAPE the related manuscript is pending peer review submission but can be found on BioRxiv:
+
 Dench, Jonathan (2018) The SHAPE of logistic growth shows that timing does matter, bioRxiv, doi:10.1101/392944
 
+
 BibTex Citation Script:
+
 @article {Dench:2018aa,
+
 	author = {Dench, Jonathan},
+	
 	title = {The SHAPE of logistic growth shows that timing does matter},
+	
 	year = {2018},
+	
 	doi = {10.1101/392944},
+	
 	publisher = {Cold Spring Harbor Laboratory},
+	
 	abstract = {Experimental evolution is a powerful tool for studying evolutionary questions and the use of in silico systems is growing as they offer complete parameter control and more fine grained tracking of dynamics. However, existing software are limited by the models implemented, output obtainable, or their lack of interpretability within biological systems. Here I introduce SHAPE (Simulated Haploid Asexual Population Evolution) a forward time simulation tool closely replicating microbial experimental evolution that offers the flexibility to implement alternative models and study detailed output. I first validate SHAPE by replicating the evolutionary outcome expected by several theoretical works. I then extend theory by contrasting how serial passaging affects the evolutionary outcome for microbial communities undergoing exponential and logistic growth.},
+	
 	URL = {https://www.biorxiv.org/content/early/2018/08/16/392944},
+	
 	eprint = {https://www.biorxiv.org/content/early/2018/08/16/392944.full.pdf},
+	
 	journal = {bioRxiv}
+	
 }
