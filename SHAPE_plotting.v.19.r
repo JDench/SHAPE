@@ -1821,51 +1821,28 @@ if(plotTypes["entropy"]){
 				}
 				# now for each replicate associated to thisJob, we need to go get the line of descent for the final_domLineage
 				tmpAdd <- foreach(thisFile = names(tmpData[[thisJob]]),.combine="rbind")%dopar%{
-					# We identify what was the final established lineage for this replicate run
-					tmp_domLineage <- tmpData[[thisJob]][[thisFile]]$final_domLineage[c("genotypeID","binaryString")]
-					
-					tmpFile <- list.files(path=paste(workDir,thisJob,"/",sep=""),
-											pattern=paste(thisFile,saveSuffixes["run"],sep=""),
-											full.names=TRUE)
-					# We make certain that we've identified a single file, and if so we load it to grab the line of descent information
-					if(length(tmpFile) > 1){
-						stop(paste("Problem finding a unique file to load data from for: ",thisFile,sep=""))
-					#} else if (length(tmpFile) == 0){
-					#	tmpAdd <- tmpAdd[-which(rownames(tmpAdd) == thisFile),]
-					} else if (length(tmpFile) == 1){
-						tmp_fileString <- nameEnviron(tmpFile,funcBase = envString)
-						assign(tmp_fileString, new.env(), pos = ".GlobalEnv")
-						# This should load objects called info_estLines and runDemographics
-						load(tmpFile, envir = eval(as.name(tmp_fileString)) )
-						# What we need is the info_estLines$end_Lines_of_Descent for the tmpDom lineage, checking that the information is consistent...
-						if(!is.element(tmp_domLineage["genotypeID"],names(eval(as.name(tmp_fileString))$info_estLines$end_Lines_of_Descent))){
-							stop(paste("Problem with consistency of the line of descent and listed dominant lineage for: ",thisFile,sep=""))
+						# We identify what was the final established lineage for this replicate run
+						tmp_domLineage <- c(tmpData[[thisJob]][[thisFile]]$final_domLineage,
+											"runName"=thisFile)
+						# If there are any compressed lines_ofDescent, we break them up and return each instance
+						if(grepl(string_sepLines,tmp_domLineage["line_ofDescent"])){
+							tmpLines <- strsplit(tmp_domLineage["line_ofDescent"],string_sepLines)[[1]]
+							tmp_domLineage <- matrix(c(rep(tmp_domLineage["genotypeID"],length(tmpLines)),
+														rep(tmp_domLineage["binaryString"],length(tmpLines)),
+														tmpLines,
+														rep(tmp_domLineage["firstStep"],length(tmpLines)),
+														rep(tmp_domLineage["runName"],length(tmpLines))),
+														nrow = length(tmpLines))
 						}
-						tmp_line_of_descent <- as.character(eval(as.name(tmp_fileString))$info_estLines$end_Lines_of_Descent[[tmp_domLineage["genotypeID"]]])
-						# We now try and extract the first transition in this line of descent
-						tmp_dom_transitions <- strsplit(tmp_line_of_descent,string_lineDescent)
-						# Now if there was no transition we should be left with the WT genotype ID of "0" as the only element... otherwise we have a first step.
-						tmp_firstTransition <- unlist(lapply(tmp_dom_transitions,function(x){ 
-													if(length(x) == 1){
-														paste(rep(x,2),collapse=string_lineDescent)
-													} else {
-														paste(x[1:2],collapse=string_lineDescent) 
-													} }))
-						#tmpAdd[thisFile,] <- unname(c(tmp_domLineage,tmp_line_of_descent,tmp_firstTransition))
-						rm(list=c(tmp_fileString),pos=".GlobalEnv")
-						gc()
-						tmp_mergeInfo <- t(sapply(1:length(tmp_line_of_descent),function(x) { 
-												unname(c(tmp_domLineage,tmp_line_of_descent[x],tmp_firstTransition[x], thisFile))
-											},USE.NAMES=FALSE))
-						#tmpAdd <- rbind(tmpAdd,tmp_mergeInfo)
-						return( tmp_mergeInfo )
-					} else {
-						return( NULL )
+						# we now return the information for this run
+						return( tmp_domLineage )
 					}
-				}
 				# We build up the information concerning the entropy values, this first requires that we work our probabilities
-				tmp_probInfo <- lapply(1:(ncol(tmpAdd)-1),function(thisCol){
-									tmpReturn <- table(tmpAdd[,thisCol])
+				tmp_probInfo <- lapply(which(colnames(tmpAdd) != "runName"),function(thisCol){
+									# For each unique file we look at the unique information for this col
+									tmpReturn <- table(unlist(lapply(unique(tmpAdd[,"runName"]),function(thisRun){ 
+																return( unique(tmpAdd[which(tmpAdd[,"runName"] == thisRun),thisCol]) ) 
+															})))
 									return( unname(tmpReturn/length(unique(tmpAdd[,ncol(tmpAdd)]))) )
 								})
 				tmp_entropyInfo <- sapply(tmp_probInfo,calcEntropy,simplify=FALSE)
