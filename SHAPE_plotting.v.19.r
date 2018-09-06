@@ -123,6 +123,7 @@ plot3D_angles <- c("phi"=15,
 
 # Here are some constant string types being used by my pot analysis:
 string_lineDescent <- "_->_"
+string_sepLines <- "__and__"
 # This is the number of decimal places you want reported values to be rounded to
 const_sigFig <- 4
 
@@ -584,9 +585,25 @@ if(!file.exists(paste(imageFilename["saveDir"],imageFilename["repeatability"],se
 																																func_landscapeCon = func_landscapeCon,
 																																func_subNaming = db_splitTables)[,"binaryString"]
 																									}))
-											# The final dominant lineage is from our transition mat
+											# The final dominant lineage is the transitioned lineage which had the largest population on the last step.  In the event of a tie
+											# we look for the lineage which transitioned latest and break subsequent ties by highest fitness.  All to ensure a single return.
 											tmp_transitionMat <- eval(as.name(tmp_fileString))$runDemographics$transitionMat
-											tmp_final_domLineage <- c("genotypeID"=unname(tmp_transitionMat[nrow(tmp_transitionMat),"genotypeID"]),
+											tmp_final_domLineage <- cbind("popSize"= eval(as.name(tmp_fileString))$info_estLines$lineDemo[lineDemo_maxStep,"popSize",as.character(tmp_transitionMat[,"genotypeID"])],
+																			tmp_transitionMat[,c("Step","fitness","genotypeID")])
+											tmp_maxSized = which(tmp_final_domLineage[,"popSize"] == max(tmp_final_domLineage[,"popSize"]))
+											# As a final safety, but unlikely requirement, if multiple genotypeID's transitioned at the same time, have the same popSize,
+											# and have the same fitness, we simply take the first value.  This should never matter.
+											tmp_final_domLineage <- if(length(tmp_maxSized) != 1){
+																		tmpReturn <- which(tmp_final_domLineage[tmp_maxSized,"Step"]==max(tmp_final_domLineage[tmp_maxSized,"Step"]))
+																		if(length(tmpReturn) > 1){
+																			tmpReturn <- tmpReturn[which(tmp_final_domLineage[tmp_maxSized[tmpReturn],"fitness"]==max(tmp_final_domLineage[tmp_maxSized[tmpReturn],"fitness"]))][1]
+																		}
+																		tmp_final_domLineage[tmp_maxSized[tmpReturn],"genotypeID"]
+																	} else {
+																		tmp_final_domLineage[tmp_maxSized,"genotypeID"]
+																	}
+											# We now build this information into an object shaped as intended for use.
+											tmp_final_domLineage <- c("genotypeID"=tmp_final_domLineage,
 																		"binaryString"="")
 											tmp_final_domLineage["binaryString"] <- tmp_final_estLineage[which(tmp_final_estLineage[,"genotypeID"] == tmp_final_domLineage["genotypeID"]),"binaryString"]
 											# We now also want to track the line of descent for the dominant lineage and it's first transition
@@ -601,7 +618,7 @@ if(!file.exists(paste(imageFilename["saveDir"],imageFilename["repeatability"],se
 											}
 											# We now add more information to the domLineage vector
 											tmp_final_domLineage <- c(tmp_final_domLineage,
-																	"line_ofDescent"=tmp_line_of_descent,
+																	"line_ofDescent"= paste(tmp_line_of_descent,collapse=string_sepLines),
 																	"firstStep"=tmp_firstTransition)
 											
 											# We build now the transition mat into something which shows the steps taken on the fitness landscape
@@ -658,6 +675,28 @@ if(!file.exists(paste(imageFilename["saveDir"],imageFilename["repeatability"],se
 																						"transitionStep"= tmpID["Step"],
 																						row.names = rownames(tmp_possProgenitors),
 																						stringsAsFactors = FALSE) )
+												}
+												# Now it's possible the same genotype transition occured multiple times which woould result in 
+												# replicated rows OTHER than the transitionStep value, we search for this
+												tmp_checkCols <- which(colnames(tmp_returnMat) != "transitionStep")
+												tmpDuplicated <- duplicated(tmp_returnMat[,tmp_checkCols])
+												if(any(tmpDuplicated)){
+													# We find the paired rows for each duplicated, I setup a working reference matrix due
+													# to observed issues comparing rows with my apply method.
+													tmp_workMat <- matrix(gsub("[[:space:]]","",as.character(unname(unlist(tmp_returnMat[,tmp_checkCols])))),
+																			ncol = ncol(tmp_returnMat[,tmp_checkCols]))
+													tmpDuplicated <- lapply(which(tmpDuplicated),function(tmpRow){
+																		which(apply(tmp_workMat,MARGIN=1,function(x){
+																				all(x == tmp_workMat[tmpRow,tmp_checkCols])
+																				}))
+																	})
+													# So for each unique set in the list we trim our return matrix
+													tmp_removeRows <- NULL
+													for(thisSet in unique(tmpDuplicated)){
+														tmp_returnMat[thisSet[1],"transitionStep"] <- paste(tmp_returnMat[thisSet,"transitionStep"],collapse="_")
+														tmp_removeRows <- c(tmp_removeRows,thisSet[-1])
+													}
+													if(!is.null(tmp_removeRows)){ tmp_returnMat <- tmp_returnMat[-tmp_removeRows,] }
 												}
 											} else {
 												# this is the rather null case of no steps being taken
