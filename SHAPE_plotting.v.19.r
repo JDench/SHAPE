@@ -625,7 +625,8 @@ if(!file.exists(paste(imageFilename["saveDir"],imageFilename["repeatability"],se
 											# In order to know the transitions, we look at the transition matrix and for a lineage, but starting with the first
 											# that is found in the tranisition matrix which was not established on Step_0
 											tmp_initialEst <- dimnames(eval(as.name(tmp_fileString))$info_estLines$lineDemo)[[3]]
-											tmp_initialEst <- tmp_initialEst[which(eval(as.name(tmp_fileString))$info_estLines$lineDemo[nameTable_step(1),"isEstablished", tmp_initialEst] == 1)]
+											tmp_initialEst <- unique(c(tmp_initialEst[which.max(eval(as.name(tmp_fileString))$info_estLines$lineDemo[nameTable_step(0),"popSize", tmp_initialEst])],
+																		tmp_initialEst[which(eval(as.name(tmp_fileString))$info_estLines$lineDemo[nameTable_step(0),"isEstablished", tmp_initialEst] == 1)]))
 											# If there are any genotypes which were not in the initial set we go further, otherwise we're returning some null stuff
 											tmp_returnMat <- NULL
 											if(any(!is.element(tmp_transitionMat[,"genotypeID"],as.numeric(tmp_initialEst))) && length(tmp_initialEst) > 0){
